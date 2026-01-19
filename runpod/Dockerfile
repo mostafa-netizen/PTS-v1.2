@@ -13,16 +13,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements.txt .
+COPY runpod/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy OCR module
-COPY ../ocr /workspace/ocr
+COPY ocr /workspace/ocr
 
 # Copy API server
-COPY api_server.py .
+COPY runpod/api_server.py .
 
 # Expose port
 EXPOSE 8000
@@ -33,4 +33,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Run API server
 CMD ["python", "api_server.py"]
-
