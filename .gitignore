@@ -64,3 +64,17 @@ logs/
 htmlcov/
 .pytest_cache/
 
+# Deployment
+gunicorn.pid
+*.pid
+
+# Sensitive data
+*.pem
+*.key
+*.crt
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+

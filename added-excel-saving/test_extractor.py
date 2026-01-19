@@ -82,13 +82,11 @@ def extract_tendons(words, image):
             color = (0, 0, 255)
         x1, y1, x2, y2 = tendon.x1.min(), tendon.y1.min(), tendon.x2.max(), tendon.y2.max()
         x1, y1, x2, y2 = int(x1 * width), int(y1 * height), int(x2 * width), int(y2 * height)  # indicator bbox
-        # vis = draw_boxes(vis, tendon)
         w, h = x2 - x1, y2 - y1
         xe1, ye1, xe2, ye2 = x1 - w, y1 - h, x2 + w, y2 + int(h * 2.5)
         img_crop = image[ye1:ye2, xe1:xe2]
         i = i + 1
         if img_crop.shape[0] > 0 and img_crop.shape[1] > 0:
-            # cv2.imwrite(f"data/examples-output/tendon_image_{i}.png", img_crop)
             matched, bbox, val = find_template_and_match(img_crop)
 
             if matched:

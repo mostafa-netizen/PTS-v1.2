@@ -56,7 +56,8 @@ SERVER_PORT = 3000
 UPLOAD_FOLDER = 'uploads'
 
 # Output folder for processed results
-SERVER_OUTPUT_FOLDER = 'outputs'
+OUTPUT_FOLDER = 'outputs'
+SERVER_OUTPUT_FOLDER = 'outputs'  # Deprecated, use OUTPUT_FOLDER
 
 # Allowed file extensions for upload
 ALLOWED_EXTENSIONS = {'pdf'}
@@ -64,6 +65,63 @@ ALLOWED_EXTENSIONS = {'pdf'}
 # Maximum file size for upload (in bytes)
 # Default: 50MB
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+
+# ============================================================
+# PROCESSING CONFIGURATION
+# ============================================================
+
+# Tile size for OCR processing
+TILE_SIZE = 1000
+
+# Tile overlap for OCR processing
+TILE_OVERLAP = 250
+
+# ============================================================
+# REDIS CONFIGURATION (for production)
+# ============================================================
+
+# Redis connection settings
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
+
+# ============================================================
+# RUNPOD CONFIGURATION (GPU Processing)
+# ============================================================
+
+# RunPod API settings
+RUNPOD_API_KEY = os.getenv('RUNPOD_API_KEY', '')
+RUNPOD_ENDPOINT_ID = os.getenv('RUNPOD_ENDPOINT_ID', '')
+FORCE_RUNPOD = os.getenv('FORCE_RUNPOD', 'false').lower() == 'true'
+
+# ============================================================
+# STORAGE CONFIGURATION
+# ============================================================
+
+# Storage backend: 'local' or 'spaces'
+STORAGE_BACKEND = os.getenv('STORAGE_BACKEND', 'local')
+
+# DigitalOcean Spaces configuration
+DO_SPACE_NAME = os.getenv('DO_SPACE_NAME', '')
+DO_REGION = os.getenv('DO_REGION', 'nyc3')
+DO_ACCESS_KEY = os.getenv('DO_ACCESS_KEY', '')
+DO_SECRET_KEY = os.getenv('DO_SECRET_KEY', '')
+
+# ============================================================
+# AUTHENTICATION CONFIGURATION
+# ============================================================
+
+# Enable authentication
+ENABLE_AUTH = os.getenv('ENABLE_AUTH', 'false').lower() == 'true'
+
+# Flask secret key for sessions
+SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Session configuration
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
+SESSION_COOKIE_HTTPONLY = os.getenv('SESSION_COOKIE_HTTPONLY', 'true').lower() == 'true'
+SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
 
 # ============================================================
 # GPU CONFIGURATION

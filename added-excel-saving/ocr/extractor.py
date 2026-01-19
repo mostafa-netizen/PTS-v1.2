@@ -77,3 +77,4 @@ class TextExtractor(BaseExtractor):
             # print("Measure detection error:", e)
 
         return None, None, None
+

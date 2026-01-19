@@ -273,23 +273,48 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                             <div class="bg-gradient-to-br from-industrial-50 to-industrial-100 p-6 rounded-lg border border-industrial-200">
                                 <div class="text-3xl mb-2">📄</div>
                                 <p class="text-2xl font-bold text-industrial-900">${results.total_pages}</p>
                                 <p class="text-steel-600">Pages Processed</p>
                             </div>
                             <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
-                                <div class="text-3xl mb-2">✅</div>
-                                <p class="text-2xl font-bold text-green-900">${results.results.length}</p>
-                                <p class="text-steel-600">Results Generated</p>
+                                <div class="text-3xl mb-2">🎯</div>
+                                <p class="text-2xl font-bold text-green-900">${results.total_tendons || results.results.length}</p>
+                                <p class="text-steel-600">Tendons Detected</p>
                             </div>
                             <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
-                                <div class="text-3xl mb-2">🎯</div>
-                                <p class="text-2xl font-bold text-blue-900">100%</p>
-                                <p class="text-steel-600">Success Rate</p>
+                                <div class="text-3xl mb-2">✅</div>
+                                <p class="text-2xl font-bold text-blue-900">${results.results.length}</p>
+                                <p class="text-steel-600">Results Generated</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+                                <div class="text-3xl mb-2">📊</div>
+                                <p class="text-2xl font-bold text-purple-900">Excel</p>
+                                <p class="text-steel-600">Export Available</p>
                             </div>
                         </div>
+
+                        ${results.excel_available ? `
+                            <div class="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-300">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-5xl">📊</div>
+                                        <div>
+                                            <h3 class="text-xl font-bold text-green-900 mb-1">Excel Measurements Ready</h3>
+                                            <p class="text-green-700">Download comprehensive tendon measurements in Excel format</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="downloadExcel()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center gap-2">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        Download Excel
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
 
                         <div>
                             <h3 class="text-2xl font-bold text-industrial-900 mb-4">Annotated Drawings</h3>
@@ -473,7 +498,8 @@
         }
 
         function startPolling() {
-            pollInterval = setInterval(checkStatus, 2000);
+            // Poll every 500ms for smooth real-time progress updates
+            pollInterval = setInterval(checkStatus, 500);
             checkStatus();
         }
 
@@ -519,13 +545,30 @@
             document.body.removeChild(link);
         }
 
+        function downloadExcel() {
+            // Download Excel file
+            const link = document.createElement('a');
+            link.href = `${API_BASE_URL}/api/export/${currentJobId}/excel`;
+            link.download = `tendon_measurements_${currentJobId}.xlsx`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function downloadAll() {
             fetch(`${API_BASE_URL}/api/results/${currentJobId}`)
                 .then(res => res.json())
                 .then(results => {
+                    // Download all images
                     results.results.forEach((result, index) => {
                         setTimeout(() => downloadImage(result.filename), index * 300);
                     });
+
+                    // Download Excel if available
+                    if (results.excel_available) {
+                        setTimeout(() => downloadExcel(), results.results.length * 300 + 500);
+                    }
                 });
         }
 

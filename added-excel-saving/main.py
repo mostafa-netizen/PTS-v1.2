@@ -1,6 +1,5 @@
 import os
-import subprocess
-import platform
+from itertools import batched
 
 import numpy as np
 import tqdm
@@ -10,25 +9,6 @@ import pandas as pd
 import cv2
 
 from test_extractor import extract_tendons
-import config
-
-
-def batched(iterable, n):
-    """Batch data into lists of length n. The last batch may be shorter."""
-    # batched('ABCDEFG', 3) --> ABC DEF G
-    if n < 1:
-        raise ValueError('n must be at least one')
-    it = iter(iterable)
-    while True:
-        batch = []
-        for _ in range(n):
-            try:
-                batch.append(next(it))
-            except StopIteration:
-                if batch:
-                    yield batch
-                return
-        yield batch
 
 
 def crop_tiles(image, tile_size=1000, overlap=250):
@@ -123,25 +103,18 @@ def deduplicate_ocr(df, iou_thresh=0.6):
     return df.loc[keep].reset_index(drop=True)
 
 
-def tile_ocr(drawing, gpu, batch_size=2, progress_callback=None) -> pd.DataFrame:
+def tile_ocr(drawing, gpu, batch_size=2) -> pd.DataFrame:
     full_h, full_w = drawing.shape[:2]
     tiles = crop_tiles(drawing)
     docs = [tile["image"] for tile in tiles]
     ocr = OCR(gpu=gpu)
     results = []
 
-    batches = list(batched(docs, batch_size))
-    total_batches = len(batches)
-
-    for batch_idx, batch in enumerate(batches):
+    for batch in list(batched(docs, batch_size)):
         if len(batch) == 0:
             break
 
         results.extend(ocr.from_image(list(batch)))
-
-        # Call progress callback if provided
-        if progress_callback:
-            progress_callback(batch_idx + 1, total_batches)
 
     all_dfs = []
     for i in range(len(tiles)):
@@ -207,88 +180,33 @@ def draw_boxes(image, df, color=(0, 255, 0), thickness=2):
     return img
 
 
-def open_image(image_path):
-    """Open an image file using the default system viewer."""
-    try:
-        if platform.system() == 'Darwin':  # macOS
-            subprocess.run(['open', image_path], check=True)
-        elif platform.system() == 'Windows':
-            os.startfile(image_path)
-        else:  # Linux
-            subprocess.run(['xdg-open', image_path], check=True)
-        print(f"\n✅ Opened image: {image_path}")
-    except Exception as e:
-        print(f"\n❌ Could not open image: {e}")
-
-
 def main():
-    # Print configuration
-    print("\n" + "=" * 60)
-    print("🚀 STARTING PDF PROCESSING")
-    print("=" * 60)
-    config.print_config()
-    print()
+    input_path = '/home/sadid/PycharmProjects/sgs-drawing-analysis/data/1029 Market (Struct 4.19.2017) compress.pdf'
+    # input_path = '/home/sadid/PycharmProjects/sgs-drawing-analysis/data/plan.pdf'
+    gpu = True
 
-    # Use configuration values
-    input_path = config.INPUT_PDF_PATH
-    gpu = config.USE_GPU
-
-    # Validate input file exists
-    if not os.path.exists(input_path):
-        print(f"❌ Error: Input PDF not found: {input_path}")
-        print(f"   Please update INPUT_PDF_PATH in config.py")
-        return
-
-    print(f"📄 Processing PDF: {input_path}")
-    print(f"📊 File size: {os.path.getsize(input_path) / (1024*1024):.2f} MB")
-    print()
-
-    # Convert PDF to images using configured DPI
-    if config.PDF_DPI == 200:  # Default DPI
-        images = convert_from_path(input_path)
-    else:
-        images = convert_from_path(input_path, dpi=config.PDF_DPI)
-
-    print(f"✅ Converted to {len(images)} image(s) at {config.PDF_DPI} DPI")
-    print()
-
-    # Create output directory
-    os.makedirs(config.OUTPUT_DIR, exist_ok=True)
-    progress = tqdm.tqdm(total=len(images), desc="Processing pages")
-    output_files = []
+    images = convert_from_path(input_path)
+    # images = images[8:11]
+    print("Total images: ", len(images))
+    os.makedirs("data/final_output", exist_ok=True)
+    progress = tqdm.tqdm(total=len(images))
     excels = []
-
     for i, drawing in enumerate(images):
         drawing = np.asarray(drawing)
-        df_final = tile_ocr(drawing, batch_size=config.OCR_BATCH_SIZE, gpu=gpu)
+        df_final = tile_ocr(drawing, batch_size=24, gpu=gpu)
+        # cv2.imwrite(f"data/original.png", drawing)
+        # df_final.to_csv("data/final.csv", index=False)
         vis, excel = extract_tendons(df_final, drawing)
         excel["page"] = i + 1
         excels.append(excel)
-        output_path = config.get_output_path(i)
-        cv2.imwrite(output_path, vis)
-        output_files.append(output_path)
+        cv2.imwrite(f"data/final_output/tendons-{i}.png", vis)
         progress.update(1)
 
-    progress.close()
+    excels = pd.concat(excels)
+    print("Total tendons: ", len(excels))
+    print(excels.head())
+    excels.to_excel("data/final_output/tendons.xlsx", index=False)
 
-    # Consolidate and save Excel
-    excels = pd.concat(excels, ignore_index=True)
-    excel_path = os.path.join(config.OUTPUT_DIR, "tendons.xlsx")
-    excels.to_excel(excel_path, index=False)
-
-    # Print summary
-    print(f"\n🎉 Processing complete! Generated {len(output_files)} image(s).")
-    print(f"📊 Total tendons detected: {len(excels)}")
-    print(f"📁 Output directory: {config.OUTPUT_DIR}")
-    print(f"📄 Excel file: {excel_path}")
-    print()
-
-    # Open images if configured
-    if config.AUTO_OPEN_RESULT:
-        for output_file in output_files:
-            open_image(output_file)
-    else:
-        print("ℹ️  Auto-open disabled. Set AUTO_OPEN_RESULT=True in config.py to enable.")
 
 
 if __name__ == '__main__':

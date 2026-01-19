@@ -1,0 +1,21 @@
+# RunPod GPU Server Requirements
+# Install these on your RunPod instance
+
+# Core dependencies
+numpy==2.2.6
+opencv-python==4.12.0.88
+pandas==2.3.3
+torch==2.9.1
+torchvision
+
+# OCR
+python-doctr==0.10.0
+
+# API Server
+flask==3.1.0
+gunicorn==21.2.0
+
+# Utilities
+pillow
+requests
+
